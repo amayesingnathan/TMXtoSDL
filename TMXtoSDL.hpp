@@ -76,6 +76,12 @@ namespace TMXtoSDL
         size_t getWidth() const { return mWidth; }
         size_t getHeight() const { return mHeight; }
 
+        std::vector<int> getRow(size_t row)
+        {
+            const auto start = mElements.begin() + (row * mWidth);
+            return std::vector<int>(start, start + mWidth);
+        }
+
         void push_back(int element) { mElements.push_back(element); }
 
         void clear() { mElements.clear(); }
@@ -370,7 +376,7 @@ namespace TMXtoSDL
     }
 
     // Returns a pointer to the tileset that the tileID belongs to. Returns nullptr if no match found.
-    static TilesetData* FindTilesetData(int tileID, std::vector<TilesetData>& tilesets)
+    static const TilesetData* FindTilesetData(int tileID, const std::vector<TilesetData>& tilesets)
     {
         auto it = std::find_if(tilesets.rbegin(), tilesets.rend(), [tileID](const auto& set) {
             return set.firstID <= tileID;
@@ -379,5 +385,23 @@ namespace TMXtoSDL
             return &(*it);
 
         return nullptr;
+    }
+
+    static SDL_Rect GetSrcRect(int tileID, const std::vector<TilesetData>& tilesets)
+    {
+        return GetSrcRect(tileID, FindTilesetData(tileID, tilesets));
+    }
+
+    static SDL_Rect GetSrcRect(int tileID, const TilesetData* tileset)
+    {
+        if (!tileset) return {};
+
+        int index = tileID - tileset->firstID;
+        int row = index / tileset->tilesetWidth;
+        int column = index % tileset->tilesetWidth;
+        int x = column * tileset->tileWidth;
+        int y = row * tileset->tileHeight;
+
+        return { x, y, tileset->tilesetWidth, tileset->tileHeight };
     }
 }

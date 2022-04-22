@@ -1,13 +1,13 @@
 # TMXtoSDL
-This is a header only library for extracting tile and collision data from a Tiled .tmx map file. To get started download download TMXtoSDL.hpp.
+This is a library for extracting tile and collision data from a Tiled .tmx map file. If you already have SDL and RapidXML set up in your project then it can be used as a header only library. Include directories may need to be altered in this case.
 
 A .tmx file is a Tiled map file encoded in XML. This library uses RapidXML to parse the file, and converts the data to SDL2 usable structures.
 
 This library requires:
-* An SDL_Renderer pointer for generating the tile SDL_Textures - this can be set by using `TiledIO::SetRenderer(SDL_Renderer* renderer)`, or can be passed in as the last argument of `TiledIO::OpenLevel(...)`.
+* An SDL_Renderer pointer for generating the tile SDL_Textures - this can be set by using `IO::SetRenderer(SDL_Renderer* renderer)`, or can be passed in as the last argument of `IO::OpenLevel(...)`.
 * The .tmx file to be stored in a directory with the same name as it, which also contain all addition tileset (.tsx) files and textures (.png) referenced in the map file.
 
-The `TiledIO::OpenLevel` function takes in the following parameters:
+The `IO::OpenLevel` function takes in the following parameters:
 * lvlPath - A `std::filesystem::path` to the level directory.
 * layerList - The output vector of Layers, each containing the tile ID at each position of the tilemap.
 * tilesetData - The output vector of Tilesets. It contains the tileID of the first tile of the set, the size of each tile, and the number of tiles per row.
