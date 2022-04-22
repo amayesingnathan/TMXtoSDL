@@ -19,6 +19,9 @@ public:
 		mHeight = height;
 	}
 
+	size_t getWidth() const { return mWidth; }
+	size_t getHeight() const { return mHeight; }
+
 	void push_back(int element) { mElements.push_back(element); }
 
 	void clear() { mElements.clear(); }

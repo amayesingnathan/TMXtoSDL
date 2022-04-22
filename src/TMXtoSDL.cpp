@@ -84,7 +84,7 @@ void TiledIO::GetLayers(xml_node<>* mapNode, std::vector<Layer>& layerList)
     }
 }
 
-void TiledIO::GetTileData(const std::filesystem::path& tileset, int firstID, std::unordered_map<int, TilesetData>& setData, std::unordered_map<int, ColliderList>& tilesetColliders)
+void TiledIO::GetTileData(const std::filesystem::path& tileset, int firstID, std::vector<TilesetData>& setData, std::map<int, ColliderList>& tilesetColliders)
 {
     std::string tilesetTmx = "levels/l";
 
@@ -98,15 +98,13 @@ void TiledIO::GetTileData(const std::filesystem::path& tileset, int firstID, std
     doc->parse<0>(xmlFile.data());
     xml_node<>* parent = doc->first_node();
 
-    TilesetData data;
-
     //Build data struct for this tileset 
-    data.tilesetTex = LoadTexture(tilesetPng.string().c_str(), mCurrentRenderer);
-    data.tilesetWidth = std::atoi(parent->first_attribute("columns")->value());
-    data.tileWidth = std::atoi(parent->first_attribute("tilewidth")->value());
-    data.tileHeight = std::atoi(parent->first_attribute("tileheight")->value());
+    SDL_Texture* tilesetTex = LoadTexture(tilesetPng.string().c_str(), mCurrentRenderer);
+    int tileWidth = std::atoi(parent->first_attribute("tilewidth")->value());
+    int tileHeight = std::atoi(parent->first_attribute("tileheight")->value());
+    int tilesetWidth = std::atoi(parent->first_attribute("columns")->value());
 
-    setData.emplace(firstID, data);
+    setData.emplace_back(firstID, tilesetTex, tileWidth, tileHeight, tilesetWidth);
 
     //Build list of colliders for each tileID
     for (xml_node<>* tile = GetChild(parent, "tile"); tile; tile = tile->next_sibling())
@@ -123,7 +121,7 @@ void TiledIO::GetTileData(const std::filesystem::path& tileset, int firstID, std
     doc = nullptr;
 }
 
-void TiledIO::GetTileData(xml_node<>* tilesetNode, int firstID, const std::filesystem::path& pngPath, std::unordered_map<int, TilesetData>& setData, std::unordered_map<int, ColliderList>& tilesetColliders)
+void TiledIO::GetTileData(xml_node<>* tilesetNode, int firstID, const std::filesystem::path& pngPath, std::vector<TilesetData>& setData, std::map<int, ColliderList>& tilesetColliders)
 {
     int tileWidth = std::atoi(tilesetNode->first_attribute("tilewidth")->value());
     int tileHeight = std::atoi(tilesetNode->first_attribute("tileheight")->value());
@@ -132,7 +130,7 @@ void TiledIO::GetTileData(xml_node<>* tilesetNode, int firstID, const std::files
     tilesetPath += std::filesystem::path(GetChild(tilesetNode, "image")->first_attribute("source")->value());
     SDL_Texture* tilesetTex = LoadTexture(tilesetPath.string().c_str(), mCurrentRenderer);
 
-    setData.emplace(firstID, TilesetData{ tilesetTex, tileWidth, tileHeight, tilesetWidth });
+    setData.emplace_back(firstID, tilesetTex, tileWidth, tileHeight, tilesetWidth);
 
     for (xml_node<>* tile = GetChild(tilesetNode, "tile"); tile; tile = tile->next_sibling())
     {
@@ -142,7 +140,7 @@ void TiledIO::GetTileData(xml_node<>* tilesetNode, int firstID, const std::files
 
 }
 
-void TiledIO::GetTilesets(xml_node<>* mapNode, const std::filesystem::path& lvlPath, std::unordered_map<int, TilesetData>& setData, std::unordered_map<int, ColliderList>& tilesetColliders)
+void TiledIO::GetTilesets(xml_node<>* mapNode, const std::filesystem::path& lvlPath, std::vector<TilesetData>& setData, std::map<int, ColliderList>& tilesetColliders)
 {
     for (xml_node<>* tileset = GetChild(mapNode, "tileset"); std::string(tileset->name()) == "tileset"; tileset = tileset->next_sibling())
     {
@@ -160,6 +158,8 @@ void TiledIO::GetTilesets(xml_node<>* mapNode, const std::filesystem::path& lvlP
             GetTileData(tileset, firstGridID, lvlPath, setData, tilesetColliders);
         }
     }
+
+    std::sort(setData.begin(), setData.end());
 }
 
 ColliderList TiledIO::GetColliders(rapidxml::xml_node<>* inputNode)
@@ -209,7 +209,7 @@ ColliderList TiledIO::GetColliders(rapidxml::xml_node<>* inputNode)
     return returnColliders;
 }
 
-void TiledIO::OpenLevel(const std::filesystem::path& lvlPath, std::vector<Layer>& layerList, std::unordered_map<int, TilesetData>& tilesetData, std::unordered_map<int, ColliderList>& tilesetColliders, SDL_Renderer* renderer)
+void TiledIO::OpenLevel(const std::filesystem::path& lvlPath, std::vector<Layer>& layerList, std::vector<TilesetData>& tilesetData, std::map<int, ColliderList>& tilesetColliders, SDL_Renderer* renderer)
 {
     if (!renderer && !mCurrentRenderer) return;
     if (renderer) mCurrentRenderer = renderer;
