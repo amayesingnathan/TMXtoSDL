@@ -19,29 +19,63 @@ namespace TMXtoSDL
 
     using Collider = SDL_Rect;
     using ColliderList = std::vector<Collider>;
+    
+
+    /// 
+    ///  TILESET DATA CONTAINING TEXTURE AND TILE DATA
+    /// 
+
+    struct TilesetData
+    {
+        int firstID;
+        SDL_Texture* tilesetTex;
+        int tileWidth;
+        int tileHeight;
+        int tilesetWidth;
+
+        TilesetData() = default;
+        TilesetData(int id, SDL_Texture* tex, int w, int h, int setW)
+            : firstID(id), tilesetTex(tex), tileWidth(w), tileHeight(h), tilesetWidth(setW) {}
+
+        bool operator <(const TilesetData& other) const
+        {
+            return firstID < other.firstID;
+        }
+    };
+
 
     /// 
     ///  SDL TEXTURE FUNCTIONS
     /// 
+	
+	class Image 
+	{
+	private:
+		static SDL_Texture* LoadTex(const char* filename, SDL_Renderer* renderer)
+		{
+			SDL_Texture* tex = nullptr;
+			
+			SDL_Surface* tempSurface = IMG_Load(filename);
+			if (!tempSurface) { std::cout << "Could not load textures." << std::endl; return nullptr; }
+			
+			tex = SDL_CreateTextureFromSurface(renderer, tempSurface);
+			if (!tex) { std::cout << SDL_GetError() << std::endl; SDL_FreeSurface(tempSurface); return nullptr; }
+			
+			SDL_FreeSurface(tempSurface);
+			return tex;
+		}
 
-    static SDL_Texture* LoadTexture(const char* filename, SDL_Renderer* renderer)
-    {
-        SDL_Texture* tex = nullptr;
-		
-        SDL_Surface* tempSurface = IMG_Load(filename);
-        if (!tempSurface) { std::cout << "Could not load textures." << std::endl; return nullptr; }
-		
-		tex = SDL_CreateTextureFromSurface(renderer, tempSurface);
-		if (!tex) { std::cout << SDL_GetError() << std::endl; SDL_FreeSurface(tempSurface); return nullptr; }
-		
-        SDL_FreeSurface(tempSurface);
-        return tex;
-    }
+    public:
+        static void DestroyTilesets(std::vector<TilesetData>& tilesets)
+        {
+            for (auto& tileset : tilesets)
+                SDL_DestroyTexture(tileset.tilesetTex);
+        }
 
-    static void DestroyTexture(SDL_Texture* tex)
-    {
-        SDL_DestroyTexture(tex);
-    }
+        static void DestroyTex(SDL_Texture* tex) { SDL_DestroyTexture(tex); }
+        static void DestroyTex(TilesetData& tileset) { SDL_DestroyTexture(tileset.tilesetTex); }
+	};
+
 
 
     /// 
@@ -87,29 +121,6 @@ namespace TMXtoSDL
         std::vector<int> mElements;
         size_t mWidth;
         size_t mHeight;
-    };
-
-
-    /// 
-    ///  TILESET DATA CONTAINING TEXTURE AND TILE DATA
-    /// 
-
-    struct TilesetData
-    {
-        int firstID;
-        SDL_Texture* tilesetTex;
-        int tileWidth;
-        int tileHeight;
-        int tilesetWidth;
-
-        TilesetData() = default;
-        TilesetData(int id, SDL_Texture* tex, int w, int h, int setW)
-            : firstID(id), tilesetTex(tex), tileWidth(w), tileHeight(h), tilesetWidth(setW) {}
-
-        bool operator <(const TilesetData& other) const
-        {
-            return firstID < other.firstID;
-        }
     };
 
 
@@ -237,7 +248,7 @@ namespace TMXtoSDL
         rapidxml::xml_node<>* parent = doc->first_node();
 
         //Build data struct for this tileset 
-        SDL_Texture* tilesetTex = LoadTexture(tilesetPng.string().c_str(), mCurrentRenderer);
+        SDL_Texture* tilesetTex = Image::LoadTex(tilesetPng.string().c_str(), mCurrentRenderer);
         int tileWidth = std::atoi(parent->first_attribute("tilewidth")->value());
         int tileHeight = std::atoi(parent->first_attribute("tileheight")->value());
         int tilesetWidth = std::atoi(parent->first_attribute("columns")->value());
@@ -266,7 +277,7 @@ namespace TMXtoSDL
         int tilesetWidth = std::atoi(tilesetNode->first_attribute("columns")->value());
         std::filesystem::path tilesetPath = pngPath;
         tilesetPath += std::filesystem::path(GetChild(tilesetNode, "image")->first_attribute("source")->value());
-        SDL_Texture* tilesetTex = LoadTexture(tilesetPath.string().c_str(), mCurrentRenderer);
+        SDL_Texture* tilesetTex = Image::LoadTex(tilesetPath.string().c_str(), mCurrentRenderer);
 
         setData.emplace_back(firstID, tilesetTex, tileWidth, tileHeight, tilesetWidth);
 
