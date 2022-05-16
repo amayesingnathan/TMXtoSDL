@@ -27,19 +27,13 @@ namespace TMXtoSDL
     static SDL_Texture* LoadTexture(const char* filename, SDL_Renderer* renderer)
     {
         SDL_Texture* tex = nullptr;
+		
         SDL_Surface* tempSurface = IMG_Load(filename);
-        if (tempSurface == NULL)
-        {
-            std::cout << "Could not load textures." << std::endl;
-        }
-        else
-        {
-            tex = SDL_CreateTextureFromSurface(renderer, tempSurface);
-            if (tex == NULL)
-            {
-                std::cout << SDL_GetError() << std::endl;
-            }
-        }
+        if (!tempSurface) { std::cout << "Could not load textures." << std::endl; return nullptr; }
+		
+		tex = SDL_CreateTextureFromSurface(renderer, tempSurface);
+		if (!tex) { std::cout << SDL_GetError() << std::endl; SDL_FreeSurface(tempSurface); return nullptr; }
+		
         SDL_FreeSurface(tempSurface);
         return tex;
     }
